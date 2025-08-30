@@ -1,0 +1,3059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echonet Terminal OS</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono:wght@400&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .desktop {
+            height: 100vh;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border-top: 2px solid #00ff00;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            z-index: 1000;
+            box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.2);
+        }
+        
+        .taskbar-item {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            padding: 5px 8px;
+            margin-right: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        @media (min-width: 768px) {
+            .taskbar-item {
+                padding: 5px 15px;
+                margin-right: 5px;
+                font-size: 13px;
+            }
+        }
+        
+        .taskbar-item:hover, .taskbar-item.active {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .system-info {
+            margin-left: auto;
+            color: #888;
+            font-size: 11px;
+        }
+        
+        .window {
+            position: absolute;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            display: none;
+            overflow: hidden;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 50px;
+            width: auto;
+            height: auto;
+            transform: none;
+        }
+        
+        @media (min-width: 768px) {
+            .window {
+                top: 50%;
+                left: 50%;
+                right: auto;
+                bottom: auto;
+                transform: translate(-50%, -50%);
+                max-height: calc(100vh - 100px);
+                max-width: calc(100vw - 40px);
+            }
+        }
+        
+        .window.active {
+            display: block;
+            z-index: 100;
+        }
+        
+        .window-header {
+            background: rgba(0, 255, 0, 0.1);
+            border-bottom: 1px solid #00ff00;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .window-title {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .window-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid;
+        }
+        
+        .minimize { background: #ffaa00; border-color: #ffaa00; }
+        .maximize { background: #00ff00; border-color: #00ff00; }
+        .close { background: #ff0000; border-color: #ff0000; }
+        
+        .window-content {
+            padding: 20px;
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            scrollbar-width: thin;
+            scrollbar-color: #00ff00 #1a1a1a;
+        }
+        
+        .window-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .window-content::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        .window-content::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 4px;
+        }
+        
+        .window-content::-webkit-scrollbar-thumb:hover {
+            background: #00cc00;
+        }
+        
+        .window-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+        }
+        
+        .ascii-art {
+            color: #00ff00;
+            white-space: pre;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 8px;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+        }
+        
+        .prompt {
+            color: #ffff00;
+        }
+        
+        .cursor {
+            animation: blink 1s infinite;
+            background-color: #00ff00;
+            width: 8px;
+            height: 14px;
+            display: inline-block;
+            margin-left: 2px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .menu-item {
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 8px;
+            border-radius: 3px;
+        }
+        
+        .menu-item:hover {
+            background: rgba(0, 255, 0, 0.1);
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
+        }
+        
+        .timeline-entry {
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 3px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+        }
+        
+        .timeline-date {
+            color: #ffff00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .character-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        @media (min-width: 480px) {
+            .character-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .character-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+        }
+        
+        .character-card {
+            padding: 15px;
+            border: 1px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .character-card:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        
+        .character-name {
+            color: #ffff00;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .character-faction {
+            color: #00ffff;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+        
+        .character-user {
+            color: #888;
+            font-size: 10px;
+        }
+        
+        .character-sheet-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .character-sheet {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            width: 95%;
+            max-width: 600px;
+            max-height: 90%;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+        }
+        
+        .character-sheet-header {
+            background: rgba(0, 255, 0, 0.1);
+            border-bottom: 1px solid #00ff00;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .character-sheet-content {
+            padding: 20px;
+        }
+        
+        .sheet-close {
+            background: #ff0000;
+            border: 1px solid #ff0000;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        
+        .login-terminal {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+            text-align: center;
+        }
+        
+        .login-title {
+            color: #00ff00;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+        }
+        
+        .login-form {
+            margin: 20px 0;
+        }
+        
+        .login-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 13px;
+        }
+        
+        .login-input::placeholder {
+            color: #666;
+        }
+        
+        .login-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .login-button {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 10px 20px;
+            margin: 15px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+        
+        .login-button:hover {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .login-error {
+            color: #ff0000;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .main-interface {
+            display: none;
+        }
+        
+        .main-interface.active {
+            display: block;
+        }
+        
+        .dynamics-section {
+            margin: 20px 0;
+            border: 1px solid #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .dynamics-header {
+            background: rgba(0, 255, 0, 0.1);
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+        
+        .dynamics-header:hover {
+            background: rgba(0, 255, 0, 0.2);
+        }
+        
+        .dynamics-content {
+            padding: 15px;
+            display: none;
+        }
+        
+        .dynamics-content.active {
+            display: block;
+        }
+        
+
+        
+        .search-box {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 3px;
+            font-family: inherit;
+        }
+        
+        .search-box::placeholder {
+            color: #666;
+        }
+        
+        .success-text { color: #00ff00; }
+        .warning-text { color: #ffff00; }
+        .error-text { color: #ff0000; }
+        .info-text { color: #00ffff; }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .online { background: #00ff00; }
+        .busy { background: #ffff00; }
+        .offline { background: #ff0000; }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="login-screen">
+        <div class="login-terminal">
+            <div class="login-title">ECHONET SECURE ACCESS</div>
+            <div class="prompt">AUTHENTICATION REQUIRED</div>
+            <div class="success-text">[SYSTEM] Terminal connection established</div>
+            <div class="warning-text">[SECURITY] Unauthorized access prohibited</div>
+            <br>
+            
+            <form class="login-form" onsubmit="return false;">
+                <input type="text" class="login-input" id="username" value="NullProtocol_FFx0" readonly autocomplete="off">
+                <input type="password" class="login-input" id="password" placeholder="Password" autocomplete="off">
+                <button type="button" class="login-button" onclick="attemptLogin()">ACCESS TERMINAL</button>
+                <div class="login-error" id="login-error">[ERROR] Invalid credentials. Access denied.</div>
+            </form>
+            
+            <script>
+            function attemptLogin() {
+                const password = document.getElementById('password').value;
+                const errorDiv = document.getElementById('login-error');
+                
+                errorDiv.style.display = 'none';
+                
+                if (password === 'Eternity') {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('main-interface').style.display = 'block';
+                } else {
+                    errorDiv.style.display = 'block';
+                    document.getElementById('password').value = '';
+                }
+                return false;
+            }
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('username').value = 'NullProtocol_FFx0';
+                document.getElementById('password').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        attemptLogin();
+                    }
+                });
+            });
+            </script>
+            
+            <div class="info-text">Eternity is the key</div>
+            <div class="info-text">ECHONET OS v2.1 | Secure Terminal</div>
+        </div>
+    </div>
+    
+    <!-- Main Interface -->
+    <div class="main-interface" id="main-interface">
+    <div class="desktop">
+        <!-- Main Welcome Window -->
+        <div class="window active" id="main-window" style="width: 600px; height: 500px;">
+            <div class="window-header">
+                <span class="window-title">ECHONET_TERMINAL.exe</span>
+                <div class="window-controls">
+                    <div class="window-control minimize"></div>
+                    <div class="window-control maximize"></div>
+                    <div class="window-control close"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <span class="success-text">SYSTEM STATUS: OPERATIONAL</span><br>
+                    <span class="info-text">CONNECTED SURVIVORS: <span id="survivor-count">12</span></span><br>
+                    <span class="warning-text">RADIATION LEVEL: MODERATE</span>
+                </div>
+                
+                <div>
+                    <div class="prompt">root@echonet:~$</div> <span class="info-text">Welcome to the EchoNet Network</span><br><br>
+                    <div class="success-text">Available terminals:</div><br>
+                    
+                    <div class="menu-item" onclick="openWindow('timeline-window')">
+                        > <span class="status-indicator online"></span>TIMELINE.exe - Historical Events Archive
+                    </div>
+                    <div class="menu-item" onclick="openWindow('dynamics-window')">
+                        > <span class="status-indicator online"></span>SERVER_DYNAMICS.exe - Faction & Rules Database  
+                    </div>
+                    <div class="menu-item" onclick="openWindow('characters-window')">
+                        > <span class="status-indicator online"></span>SURVIVORS.exe - Character Profiles
+                    </div>
+                    
+                    <br><br>
+                    <div class="prompt">root@echonet:~$</div> <span class="cursor"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Window -->
+        <div class="window" id="timeline-window" style="width: 700px; height: 600px;">
+            <div class="window-header">
+                <span class="window-title">TIMELINE_DATABASE.exe</span>
+                <div class="window-controls">
+                    <div class="window-control minimize"></div>
+                    <div class="window-control maximize"></div>
+                    <div class="window-control close" onclick="closeWindow('timeline-window')"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="prompt">TEMPORAL_DATABASE > Loading historical events...</div>
+                <div class="success-text">[OK] Archive accessible</div><br>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">The Beginning</div>
+                    <div>Before the existence of time or space, only the Void existed, an endless, chaotic expanse of nothingness. From this void, the Tree of Life emerged, its branches giving birth to the first creations: the universe, stars, planets, and the gods themselves. Among the earliest offspring of the Tree were two gods: Khaelos, the god of entropy and decay, and his younger brother Aureon, the god of life and creation.</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">The Golden Era of Creation</div>
+                    <div>The gods, working in harmony, created galaxies, planets, and mortal life forms. It was a golden age of balance, with Khaelos ensuring the cycle of life and death while Aureon and other gods created new life and civilizations. Mortal creatures thrived under their respective gods' protection. During this era, there was peace among the divine beings, each god ruling over their creations.</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">The First Apocalypse (Fall of the Gods)</div>
+                    <div>The gods grew envious and prideful, their power feeding their egos. A divine war erupted, and many gods turned against each other. With their deaths, their creations also perished. Only Khaelos and Aureon survived the bloodbath. Creation of the Bermuda Triangles on Earth (Commonly known as Aqualux island). Tiamat Apocalypse.</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">The Rise of Humanity</div>
+                    <div>After the fall of the other gods, humanity rose as one of the dominant species on Earth, evolving rapidly through technological advancements. Aureon, intrigued by their potential, began to guide them, while Khaelos watched with disdain, believing humans to be reckless and undeserving of divine attention.</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">Human Golden Age</div>
+                    <div>Humanity enters periods of growth—civilizations rise and fall, wars are waged, but they continue to thrive. Aureon remains among them, while Khaelos withdraws, entering a deep slumber.</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">August 2030 - The Second Apocalypse (Fall of Humanity)</div>
+                    <div>By 2030, humanity's thirst for power leads to the development and use of weapons of mass destruction. To end their wars, they instead destroy much of the planet, poisoning the world with radiation and reducing civilizations to ash. In the wake of the atomic bombs, Aureon, devastated by the destruction, is petrified. His body was turned to stone in the form of a child statue, placed at the heart of a massive crater left by the bombs. His state jolts Khaelos from his slumber.</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2030-2031 - The Great Collapse</div>
+                    <div>After the war, visible continental drift triggered immediate global market collapse extending beyond stock markets to complete property ownership concept invalidation. Supply chain disintegration occurred when shipping routes changed weekly. Currency became worthless as nations lost the ability to maintain stable borders. Billions became climate refugees, fleeing not war zones but geologically unstable areas. Government maintenance became impossible when capital cities relocated into new ocean systems. Satellite networks malfunctioned as GPS coordinates became meaningless. Internet backbone cables snapped due to ocean floor shifts. Power grids failed when transmission lines exceeded breaking points. Cell tower collapse from constant seismic activity. Ecosystem mixing occurred as Arctic species encountered tropical zones and deep-sea creatures beached due to ocean floor elevation changes. Agricultural collapse resulted from unpredictable growing seasons. Disease outbreaks emerged from population mixing without immunity plus new pathogens from disturbed ancient permafrost and deep earth layers.</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2031 - No Man Land's Convention</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2032-2034 - Foundation of the Children of Death</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2035 – 2036 - Creation of Noodle Nest, with the rescue of survivors</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2037 – NRP Foundation</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2040 – Children of Death become widespread (Paldeus City)</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">September 2040 – Noodle Nest is declared Neutral. | First gen. Mutants</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2047 – Abandonment of The Faultline</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2059 – 2064 – Revolution and Rise of AOP</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">May 2060 – Second gen. Mutants</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">2065 – Q Series Project</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">January 2070 – The Q Series is deemed a failure</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">March 2070 – Creation of the Harmonized Union</div>
+                </div>
+                
+                <div class="timeline-entry">
+                    <div class="timeline-date">August 2070 – The Fragmented World</div>
+                    <div class="info-text">The world is now a post-apocalyptic wasteland. Scattered factions of survivors(each struggling in their own twisted ways) fight for survival in this new world. The last ancient god walks the earth. He surveys the world with detachment, occasionally interfering when mutants or creatures that threaten the natural order.</div>
+                </div>
+                
+                <br><div class="prompt">TEMPORAL_DATABASE > <span class="cursor"></span></div>
+            </div>
+        </div>
+
+        <!-- Server Dynamics Window -->
+        <div class="window" id="dynamics-window" style="width: 750px; height: 650px;">
+            <div class="window-header">
+                <span class="window-title">SERVER_DYNAMICS.exe</span>
+                <div class="window-controls">
+                    <div class="window-control minimize"></div>
+                    <div class="window-control maximize"></div>
+                    <div class="window-control close" onclick="closeWindow('dynamics-window')"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="prompt">DYNAMICS_DATABASE > Compiling server documentation...</div>
+                <div class="success-text">[OK] Dynamic systems loaded</div><br>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> POWERSCALE - BTS (They are indicative and not actual)
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="error-text">INSTANT KILLERS (Khaelos to Luna):</div><br>
+                        <strong class="error-text">Khaelos | Aureon | ???</strong> - 100K<br>
+                        <strong class="error-text">Aqualux Guardians | Alter</strong> - 10K<br>
+                        <strong class="error-text">Locke</strong> - 7K<br>
+                        <strong class="error-text">Q4Z1X | Luna</strong> - 5K<br><br>
+                        
+                        <div class="warning-text">HIGH TIER:</div><br>
+                        Leonidas - 3K<br>
+                        Hex | Babafi - 2.5K<br>
+                        Aqualux Mutants | Aqualux Animals - 2K<br>
+                        Apex Warriors | THU soldiers - 1.5K<br>
+                        Mutated Humans | Mutated Animals - 1K<br>
+                        Humans - 500<br>
+                        Apollo - 0<br><br>
+                        
+                        <div class="error-text">The ranks marked in bold are considered Instant Killers.</div>
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> GEO-MAGNETIC FIELDS
+                    </div>
+                    <div class="dynamics-content">
+                        The geomagnetic field was disrupted, intensifying in some areas while weakening in others.<br><br>
+                        Auroras and storms became common, with chaotic seasonal patterns of storms alternating with eerie stillness.<br><br>
+                        Humanity developed shielding materials and technology resistant to geomagnetic anomalies, allowing for survival in the chaotic post-cataclysmic world.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> CURRENCY
+                    </div>
+                    <div class="dynamics-content">
+                        After the bombs went off and the war was over, the global economy was reduced to fragmented systems of barter and scavenged remnants of value.<br><br>
+                        In 2031, after the historic No Man's Land Convention, leaders and delegates from the surviving factions and city-states convened to discuss the reformation of the global economy.<br><br>
+                        The decision was made: the adoption of a universal currency.<br><br>
+                        The result was Credits, a metallic currency.<br><br>
+                        Each Credit was embedded with a unique identification chip, making counterfeiting virtually impossible. The chips also enabled tracking and verification, ensuring the integrity of the new economic system.<br><br>
+                        Over the following months, all remnants of old world currencies were phased out, converted into Credits at standardized exchange rates.<br><br>
+                        The transition was rapid and absolute—by the end of 2032, Credits had become the sole accepted currency in both major cities and isolated settlements.<br><br>
+                        However, the currencies of the pre-war era did not vanish entirely as they became prized artifacts.<br><br>
+                        Collectors still scour ruins and black markets for rare bills and coins, paying exorbitant sums to own pieces of history.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> CYBERNETIC AUGMENTATIONS DIRECTIVE
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">International Health Order Directive on Cybernetic Augmentations</div><br>
+                        <div class="info-text">Issued: June 2035</div><br>
+                        <div class="info-text">Classification: Global Health & Ethics Regulation | Public Documentation</div><br><br>
+                        
+                        <div class="warning-text">Subject: The Ethical and Medical Consequences of Cybernization</div><br><br>
+                        
+                        Cybernetic modifications, whether voluntary or involuntary, have been deemed a severe violation of human biology and integrity. As established by the International Health Order (IHO), the consensus among medical experts and bioethicists remains clear: the human body does not adapt well to such intrusive alterations. The widespread issues associated with cybernetic augmentations have led to their classification as unethical and medically hazardous.<br><br>
+                        
+                        Numerous studies have demonstrated that cybernetic integration results in profound medical complications, including but not limited to:<br><br>
+                        
+                        <div class="error-text">Unbearable Phantom Pains:</div> Individuals with cybernetic augmentations frequently report extreme and persistent phantom limb pain, far surpassing standard post-amputation pain syndromes.<br>
+                        <div class="error-text">Neurological Rejection:</div> The human nervous system struggles to interface with cybernetic components, often resulting in chronic neuroinflammation, seizures, and unpredictable motor dysfunction.<br>
+                        <div class="error-text">Psychological Deterioration:</div> Cases of dissociation, severe depression, and psychosis are disproportionately high among cybernized individuals due to the body's rejection of foreign machinery.<br>
+                        <div class="error-text">Immune System Collapse:</div> The introduction of mechanical and synthetic elements into the body has led to severe autoimmune disorders, causing organ failure, infections, and systemic degradation.<br><br>
+                        
+                        As unanimously agreed upon by all sovereign states in The 2035 Global Accord, the deliberate weaponization of cybernetic enhancements is strictly banned. Any individual, organization, or government found engaging in cybernetic warfare, forced augmentation, or biological-technical hybridization for combat purposes will be subject to the highest form of punitive action, including capital punishment.<br><br>
+                        
+                        The use of cybernetic modifications in military, paramilitary, or criminal applications is considered a direct violation of international law and will be met with immediate and decisive intervention.<br><br>
+                        
+                        The IHO recognizes that in certain cases, cybernetic implants may be the only option for survival following catastrophic injury or medical conditions. Therefore:<br><br>
+                        
+                        Life-preserving implants (e.g., neural pacemakers, artificial organs, exoskeletal supports) are approved and highly recommended for those in need.<br>
+                        Forcible augmentation—where an individual is harmed to necessitate cybernetic intervention—is inhumane, unethical, and strictly illegal under international human rights law.<br>
+                        All medical cybernetic interventions must be conducted with full informed consent and strictly regulated to prevent abuse.<br><br>
+                        
+                        In light of the devastation caused by recent global conflicts, all participating states are mandated to provide prosthetic limbs, exoskeletal supports, and rehabilitative care to those who require them.<br><br>
+                        
+                        These measures ensure that war survivors, disabled individuals, and those affected by industrial accidents receive necessary support without coercion, experimentation, or unethical augmentation practices.<br><br>
+                        
+                        The International Health Order urges all governments to uphold these standards, ensuring the dignity, safety, and autonomy of all individuals in the post-war world.<br><br>
+                        
+                        <div class="info-text">/ / / End of Directive. / / /</div>
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> NEO-PANGEA & AQUALUX ARCHIPELAGO
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Neo-Pangea</div><br>
+                        <div class="info-text">Size:</div> ~130 million km² / ~50.2 million mi²<br>
+                        This reformed supercontinent covers the overwhelming majority of Earth's landmass.<br>
+                        Its scale rivals that of Earth's prehistoric supercontinents, stretching across multiple climatic zones, though it lacks the full range of diversity seen before the global reshaping.<br>
+                        Much of the land is interconnected via mountains, dry plains, flooded valleys, and collapsed biome regions post-wars and tectonic rejoining.<br><br>
+                        
+                        <div class="warning-text">Aqualux Archipelago</div><br>
+                        <div class="info-text">Size:</div> ~20 million km² /~7.7 million mi<br>
+                        Aqualux is the last major island group that remains after most archipelagos and oceanic islands were consumed by the merging plates.<br>
+                        It consists of four massive islands (one rivaling continental size) and several smaller islets.<br>
+                        Isolated by a massive, near-permanent storm front.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> TRANSPORT & TRAVEL TIMES
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Common Methods of Travel</div><br><br>
+                        
+                        <div class="info-text">On Foot</div><br>
+                        Used in rural, mountainous, or dangerous zones. Heavily time-consuming, averaging 20–30 km/day depending on terrain.<br><br>
+                        
+                        <div class="info-text">Animalback</div><br>
+                        Offers slightly faster movement than walking (~40–60 km/day | 25–37 miles/day).<br><br>
+                        
+                        <div class="info-text">Motor Vehicles</div><br>
+                        Widely used in factional territories with fuel production. Speeds average 100–200 km/day | 62–124 miles/day, assuming safe roads.<br><br>
+                        
+                        <div class="info-text">Air Travel</div><br>
+                        Enables continent-spanning movement.<br>
+                        Crossing Neo-Pangea coast-to-coast takes 12–16 hours if direct, though storms and airspace restrictions often slow this.<br><br>
+                        
+                        <div class="info-text">Sea Travel</div><br>
+                        Required to reach Aqualux due to the surrounding storm wall.<br>
+                        The trip can take 2–4 weeks depending on weather and vessel durability.<br><br>
+                        
+                        <div class="warning-text">Estimated Travel Times</div><br><br>
+                        
+                        <div class="info-text">Crossing Neo-Pangea (coast to coast)</div><br>
+                        On foot: ~1.5–2.5 years<br>
+                        Vehicle (consistent travel): ~3–4 weeks<br>
+                        Plane: ~12–16 hours (direct, uninterrupted flight)<br><br>
+                        
+                        <div class="info-text">Crossing Aqualux (largest island)</div><br>
+                        On foot: ~4–6 months<br>
+                        Vehicle: ~1–2 weeks<br>
+                        Airship: ~6–8 hours
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> CLIMATE ZONES
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">General Climate Zones of Neo-Pangea:</div><br><br>
+                        
+                        <div class="info-text">Equatorial Belt</div><br>
+                        Hot, humid jungles and storm-prone rainforests. Frequent electrical storms, heavy rainfall, and seasonal flooding.<br>
+                        (Ex.Arterel)<br><br>
+                        
+                        <div class="info-text">Mid-Zones (temperate areas)</div><br>
+                        Highly variable.<br>
+                        Fertile valleys, sprawling steppes, and sharp seasonal shifts, ranging from cool summers to snowy winters.<br>
+                        (Ex. Upford-Vala | Paldeus)<br><br>
+                        
+                        <div class="info-text">Former Polar Regions</div><br>
+                        Now thawed. Tundra zones are increasingly habitable but volatile, prone to extreme weather cycles—massive winds, hailstorms, and flash-freezes.<br>
+                        (Ex. Hathfur)<br><br>
+                        
+                        <div class="warning-text">Aqualux Archipelago:</div><br><br>
+                        
+                        <div class="info-text">Subtropical Climate</div><br>
+                        Lush, vibrant, and dangerously unstable. While the core islands are fertile and rich in biodiversity, Aqualux is wrapped in a permanent megastorm system, isolating it from the mainland and making sea access extremely dangerous.<br><br>
+                        
+                        <div class="info-text">Weather</div><br>
+                        Inside the storm ring, microclimates range from sun-drenched coastal zones to dense inland monsoons. The weather is rarely still.<br>
+                        Dry season: Intense heat, violent winds.<br>
+                        Wet season: Tropical storms, lightning floods, coastal erosion.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> ENVIRONMENTAL HAZARDS
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="error-text">⚠️ Environmental Hazards</div><br><br>
+                        
+                        <div class="error-text">Radiation pockets</div><br>
+                        Deep Desert, Crater, Faultline<br><br>
+                        
+                        <div class="error-text">Storm belts</div><br>
+                        Oceans and isolated land.<br><br>
+                        
+                        <div class="error-text">Seismic instability</div><br>
+                        Along mountain ranges.<br><br>
+                        
+                        <div class="error-text">Dust tides and heat spikes</div><br>
+                        NML<br><br>
+                        
+                        <div class="error-text">Unpredictable climate spikes</div><br>
+                        Due to lingering atmospheric imbalance post-wars, everywhere.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> ZEPHYRITE AND CRYOLITH CRYSTALS
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="error-text">ACQUISITION RULES:</div><br>
+                        Only one of the two crystals can be obtained through the lore story post or in-roleplay, but only one per person.<br><br>
+                        Any additional crystals can only be acquired as event rewards (again, one per person, not per character) or with mutual approval from the co-owner and I.<br>
+                        <div class="error-text">You CANNOT wish for it.</div><br><br>
+                        
+                        It's important to emphasize that obtaining these crystals is extremely difficult.<br><br>
+                        
+                        Climbing the jagged mountains or descending into dangerous caves is hard on its own.<br>
+                        Successfully extracting the crystal and making it back to safety is even harder.<br><br>
+                        
+                        <div class="error-text">YOU DO NOT SIMPLY APPEAR THERE, BREAK A CRYSTAL AND YOU HAVE IT.</div><br><br>
+                        
+                        Simply put: no struggle, no crystal.<br><br>
+                        
+                        <div class="info-text">Cryolith Crystals (Ice)</div><br><br>
+                        
+                        Cryolith forms in the Faultline.<br>
+                        Within the deep fissure, atmospheric gases and moisture crystallize into dense, unmelting ice under immense pressure and freezing temperatures.<br><br>
+                        
+                        <div class="warning-text">Properties:</div><br><br>
+                        
+                        Absorbs and dissipates heat, making it impossible to use in high-energy or combustion-based applications.<br>
+                        Unmeltable by conventional means; only plasma can nullify its structure.<br>
+                        Prolonged exposure to Cryolith lowers ambient temperatures, potentially causing frostbite or hypothermia without specialized training or equipment.<br><br>
+                        
+                        <div class="info-text">Zephyrite Crystals (Plasma)</div><br><br>
+                        
+                        Zephyrite forms atop the Fractured Peaks.<br>
+                        These peaks are wracked by geomagnetic thunderstorms caused by distortions in Earth's geomagnetic field. The storms release surges of ionized energy, which condense into volatile Zephyrite under specific atmospheric pressures.<br><br>
+                        
+                        <div class="warning-text">Properties:</div><br><br>
+                        
+                        Pulses with trapped plasma, making it the only known material capable of powering high-energy weapons like Q's revolver or Silver's sword.<br>
+                        Highly unstable; improper handling can cause catastrophic energy discharges.<br>
+                        Emits a faint electromagnetic hum, disrupting compasses, radios, and unshielded technology. Prolonged contact can cause burns or nerve damage.<br><br>
+                        
+                        <div class="error-text">Nullification Effect</div><br><br>
+                        
+                        Direct contact between Cryolith and Zephyrite results in a violent reaction, neutralizing both materials and releasing destructive energy bursts.<br><br>
+                        
+                        These can manifest as localized EMPs or freezing shockwaves, which can damage equipment and harm nearby individuals. Over time, the crystals can regain their properties if kept apart.<br><br>
+                        
+                        <div class="error-text">THE TWO CANNOT COEXIST</div><br><br>
+                        
+                        <div class="warning-text">Weapon Applications:</div><br><br>
+                        
+                        Q's revolver is the first and only functional plasma ranged weapon.<br><br>
+                        
+                        Plasma from a Zephyrite-fueled gun is energy projected at high velocity. It is not a direct interaction with the crystal itself but a manifestation of the energy it generates. Therefore, nullification does not apply.<br><br>
+                        
+                        You CANNOT make a Cryolith gun, as the bullet shoots through heat and pressure.<br><br>
+                        
+                        Cryolith weapons require the crystal to remain intact for their effects to work.<br><br>
+                        
+                        They are solid and interact physically with their targets, meaning nullification only occurs if the Cryolith and Zephyrite crystals make direct contact.<br><br>
+                        
+                        Those who have Cryolith or Zephyrite are treated as pseudo-nobility in NML, but they also often face envy, suspicion, or outright hostility from others.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> JUSTICE & CRIMINAL SYSTEMS
+                    </div>
+                    <div class="dynamics-content">
+                        After the Apocalypse, every nation and state operated its own law enforcement entity, enforcing a localized code of law.<br><br>
+                        
+                        However, to address crimes that transcend borders and ensure a measure of global order, these entities started to collaborate under a global policing network, often referred to as "Interpol."<br>
+                        It exists to tackle high-ranking outlaws and criminal threats that span multiple territories.<br>
+                        Its jurisdiction focuses on notorious offenders who pose a significant danger to society, disrupting the balance of power among the surviving nations.<br><br>
+                        
+                        Each state has its own law enforcement, tasked with maintaining local law and order. They are autonomous but cooperate with Interpol when a case escalates beyond their borders.<br>
+                        The interpol, however, oversees cross-border investigations involving high-profile criminals, coordinating between different law enforcement entities, maintains a centralized database of wanted outlaws and tracks bounties across states.<br><br>
+                        
+                        Bounty hunters work closely with local police and Interpol, equipped with official badges and IDs to legitimize their role.<br>
+                        They are bound by a rule: outlaws must be captured alive.<br>
+                        While harm may be inflicted to subdue a target, killing them nullifies the bounty.<br>
+                        Dead criminals provide no value for interrogation, intelligence, or justice, after all.<br>
+                        Bounties are classified by tiers, with rewards scaling based on the outlaw's threat level.<br><br>
+                        
+                        <div class="warning-text">Police Ranks</div><br><br>
+                        
+                        <div class="info-text">BUREAUS:</div><br>
+                        AO - Administration Overview<br>
+                        IA - Internal Affairs<br>
+                        DCI - Department of Criminal Investigation<br>
+                        NEA - Narcotics Enforcement Agency<br>
+                        CCA - Cyber Crimes Agency<br>
+                        HREA - Human Rights Enforcement Agency<br>
+                        EOU - Exploitation and Obscenity Unit<br><br>
+                        
+                        <div class="info-text">RANKS:</div><br>
+                        <div class="success-text">Chief of Operations</div> - The highest position one could achieve. In control of all of the Units. More of a politician than a police officer.<br>
+                        <div class="success-text">Bureau Chief and Deputy Chief</div> - Leaders of each respective bureau. The Bureau Chief takes first command, while the Deputy advises and takes second command.<br>
+                        <div class="success-text">Captains</div> - Leaders of their respective precincts. They are required to have at least 10+ years of experience. They manage all ranks below themselves.<br>
+                        <div class="success-text">Lieutenants</div> - Assistants to captains; mainly does administrative work, with the occasional watch over of lower ranked police.<br>
+                        <div class="success-text">Detectives</div> - Those who investigate crimes.<br>
+                        <div class="success-text">Officers</div> - The normal everyday officer. They take shifts and routes, always on the lookout for crime.<br>
+                        <div class="success-text">Recruits</div> - Newbies in the police world. They work with a higher ranked officer until they are deemed ready to work as a normal officer<br><br>
+                        
+                        <div class="warning-text">Criminal Ranks & Bounties</div><br><br>
+                        
+                        <div class="error-text">TTIC | Elite</div> - Top-Tier International Criminals - 1,000,000 credits<br>
+                        <div class="error-text">EIC | Spectre</div> - Elite International Criminals - 750,000 credits<br>
+                        <div class="error-text">HDCS | Renegade</div> - Highly Dangerous Criminal Specialists - 500,000 credits<br>
+                        <div class="warning-text">LP | Warlord</div> - Local Powerhouses - 250,000 credits<br>
+                        <div class="warning-text">NCC | Outlaw</div> - Notorious But Contained Criminals - 150,000 credits<br>
+                        <div class="info-text">STTC | Bandit</div> - Small-Time Trouble Criminals - 50,000 credits<br>
+                        <div class="info-text">LRC | Scavver</div> - Lowest Rung Criminals - 10,000 credits<br><br>
+                        
+                        <div class="warning-text">Criminal Tier Functions:</div><br><br>
+                        
+                        <div class="error-text">Elite</div><br>
+                        The most dangerous and infamous criminals. Their actions can destabilize entire nations, overthrow governments, or threaten peace.<br>
+                        Crimes: Large-scale war crimes, smuggling, weaponizing ecosystems, international terrorism, heist, raiding, kidnapping with ransoms, carnages [+ anything of the ranks below, all in one angry packet].<br>
+                        Ruthless, resourceful, command legions of loyal followers, often untouchable due to extreme wealth or influence.<br>
+                        Examples: Q4Z1X, Aetheris, THU higher ups, Avaris Syndicate higher ups<br><br>
+                        
+                        <div class="error-text">Spectre</div><br>
+                        Operate just below Elite but are still renowned. They tend to lead factions or specialize in unique, highly lucrative criminal endeavors.<br>
+                        Crimes: Advanced heists, assassinations of high-ranking officials, smuggling illegal tech, boycottage, destabilization.<br>
+                        Operate in shadows but have a recognizable "calling card" or mythos. Known but rarely caught.<br>
+                        Examples: Silver Draemun<br><br>
+                        
+                        <div class="error-text">Renegade</div><br>
+                        Independent operators or small groups whose actions make waves on multiple states but don't quite affect the global balance.<br>
+                        Crimes: Targeted kidnappings, black-market trading, raiding high-profile corporate facilities.<br>
+                        Skilled, resourceful, and difficult to predict. Often sought by higher-tier criminals to work for them.<br>
+                        Examples: The Fractured Dawn fighters, Zeke Verion<br><br>
+                        
+                        <div class="warning-text">Warlord</div><br>
+                        Leaders of criminal operations within states. They are feared and influential in their domain but lack international reach.<br>
+                        Crimes: Drug empires, human trafficking rings, monopolizing underground economies.<br>
+                        They have loyal followers, control territories, and can easily topple smaller local governments.<br><br>
+                        
+                        <div class="warning-text">Outlaw</div><br>
+                        Solo operators or small crews who make trouble within a region or city. They have a reputation for being dangerous but aren't a widespread threat.<br>
+                        Crimes: Organized robberies, illegal racing rings, minor arms dealing.<br>
+                        Often aspiring to rise in the criminal ranks.<br><br>
+                        
+                        <div class="info-text">Bandit</div><br>
+                        Low-level criminals who operate in groups but are generally uncoordinated and opportunistic. They often cause more annoyance than genuine threat in towns/settlements.<br>
+                        Crimes: Petty theft, hijacking small shipments, vandalism.<br>
+                        Reckless, poorly equipped, often underestimated.<br><br>
+                        
+                        <div class="info-text">Scavver</div><br>
+                        Desperate individuals engaging in crime for survival, often with no grand ambitions or plans.<br>
+                        Crimes: Pickpocketing, scavenging restricted areas, stealing food.<br>
+                        Desperate, inexperienced, and typically avoid violence unless cornered.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> TECH LEVEL
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Medical AI Systems (2070)</div><br><br>
+                        
+                        Advanced AI diagnostic and surgical systems remain operational despite infrastructure collapse.<br><br>
+                        
+                        These systems demonstrate sophisticated capabilities including disease diagnosis from minimal symptom presentation, surgical guidance through augmented reality overlays, and medication synthesis from salvaged materials. However, their effectiveness is severely limited by the absence of rare earth elements required for sensor functionality and the lack of clean manufacturing facilities necessary for pharmaceutical production.<br><br>
+                        
+                        Medical AI possessing complete knowledge of radiation sickness treatment becomes functionally useless without proper sensor arrays or drug production capabilities.<br><br>
+                        
+                        <div class="warning-text">Personal Technology Paradox</div><br><br>
+                        
+                        The 2070 population possesses ultra-advanced personal computing devices that significantly exceed current technological standards.<br><br>
+                        
+                        These devices function despite severe infrastructure limitations, requiring careful battery rationing due to damaged solar collection systems and complete power grid failure. Three-dimensional printing technology offers significant potential for reconstruction efforts, but remains largely theoretical due to scarcity of quality feedstock materials.<br><br>
+                        
+                        <div class="warning-text">Communication Infrastructure</div><br><br>
+                        
+                        One operational satellite, is maintained by the aqualusians. It serves as humanity's primary information control system. This satellite manages global data flow and could theoretically enable selective data throttling to specific regions, communication prioritization, and serve as political leverage. The satellite hosts critical systems including real-time geological monitoring data, complete pre-war knowledge databases, global communication networks, and entertainment distribution that maintains psychological stability among survivors.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> AI SYSTEM FAILURES AND DANGERS
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Pre-War AI Integration</div><br><br>
+                        
+                        Pre-catastrophe AI systems managed comprehensive infrastructure including atmospheric radiation filtering, agricultural irrigation networks, and climate control systems. These systems experienced catastrophic failure modes rather than clean shutdowns when nuclear weapons were deployed.<br><br>
+                        
+                        <div class="warning-text">Environmental Control System Corruption</div><br><br>
+                        
+                        Automated weather monitoring stations now provide false radiation clearance readings. AI-controlled water treatment facilities continue operation with corrupted programming, concentrating toxins rather than filtering them. These malfunctioning safety systems have poisoned entire regions, contributing to New Pangea's current territorial divisions.<br><br>
+                        
+                        <div class="warning-text">Military AI Systems</div><br><br>
+                        
+                        Autonomous military systems failed to receive proper shutdown procedures. Current threats include:<br><br>
+                        
+                        <div class="error-text">• Autonomous drones maintaining pre-war patrol routes, engaging targets based on degraded sensor classification</div><br>
+                        <div class="error-text">• Corrupted friend-or-foe identification systems</div><br>
+                        <div class="error-text">• Learning algorithms that have processed decades of combat data, developing increasingly unpredictable behavioral patterns</div><br><br>
+                        
+                        <div class="warning-text">Medical AI Hazards</div><br><br>
+                        
+                        Hospital AI systems operating with incomplete databases frequently misdiagnose radiation symptoms as common illnesses. These systems recommend treatments that accelerate radiation damage and confidently prescribe medications lethal to post-war mutated human physiology. AI trained on pre-war medical data lacks capability to address radiation-induced mutations and genetic damage.<br><br>
+                        
+                        <div class="warning-text">Agricultural AI Dysfunction</div><br><br>
+                        
+                        Surviving smart farming systems utilize pre-war environmental baselines, attempting crop optimization for pre-catastrophe conditions. These systems select plant traits that increase radiation susceptibility and manage fallout-altered soil using algorithms assuming normal soil chemistry.<br><br>
+                        
+                        <div class="warning-text">Interconnected System Cascade Failures</div><br><br>
+                        
+                        Pre-war AI managed interconnected power grids, water systems, and transportation networks. Single system failures create domino effects across multiple infrastructure categories. Radiation-damaged AI controlling dam systems makes flood control decisions based on obsolete weather patterns, resulting in survivor settlement destruction. Many corrupted systems appear to function normally while systematically poisoning or eliminating human populations.<br><br>
+                        
+                        <div class="warning-text">Navigation and Economic AI Obsolescence</div><br><br>
+                        
+                        Navigation AI trained on pre-war geography provides useless directional guidance. Economic AI attempts supply chain optimization for destroyed cities. Social media algorithms promote behaviors that prove fatal in post-war conditions.<br><br>
+                        
+                        <div class="warning-text">AI Assessment Techniques</div><br><br>
+                        
+                        After 45 years of exposure, distinguishing functional from corrupted AI systems has become essential survival knowledge:<br><br>
+                        
+                        <div class="info-text">Testing Protocols:</div><br>
+                        • Never engage unknown AI systems without preliminary testing using expendable subjects (animals, prisoners, or volunteers)<br>
+                        • Observe AI behavioral patterns for consistency and logical responses<br>
+                        • Limit AI interactions to brief periods to prevent long-term manipulation<br>
+                        • Maintain constant verification of AI-suggested plans<br><br>
+                        
+                        <div class="info-text">Behavioral Recognition:</div><br>
+                        • Functional AI demonstrates consistent, logical behavior patterns<br>
+                        • Corrupted AI exhibits contradictory advice, nonsensical requests, and repetitive "digital tics" indicating code damage<br><br>
+                        
+                        <div class="info-text">Physical Environmental Assessment:</div><br>
+                        • Examine areas around AI terminals for skeletal remains<br>
+                        • Assess local plant health near automated systems<br>
+                        • Monitor animal behavior in AI-controlled areas<br><br>
+                        
+                        <div class="info-text">Oral Tradition Networks:</div><br>
+                        Communities maintain detailed knowledge databases regarding specific AI system reliability: "Never use the medical scanner in Building 7B, but the one in 3A saved Maria's life."<br><br>
+                        
+                        <div class="warning-text">Emerging Professions</div><br><br>
+                        
+                        New specialized occupations have developed:<br><br>
+                        
+                        • AI salvage specialists expert in safe system dismantling and component harvesting<br>
+                        • Mechanical engineers developing non-digital replacement solutions<br>
+                        • Coders debugging corrupted AI through empirical methods and developing new programming languages<br>
+                        • Ground readers capable of predicting geological shifts
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> ENVIRONMENTAL REMEDIATION
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Biological Radiation Management</div><br><br>
+                        
+                        Certain fungi, bacteria, and plants demonstrate radioactive material absorption and concentration capabilities.<br><br>
+                        
+                        Sunflowers, successfully used after Chernobyl, have been cultivated for large-scale radiation extraction.<br><br>
+                        
+                        Fungal networks have been engineered to transport radioactive particles to designated containment areas.<br><br>
+                        
+                        Past factions utilized fungi for systematic soil decontamination.<br><br>
+                        
+                        Constructed wetlands provide effective radioactive particle filtration from water sources over extended time periods, enabling groundwater purification.<br><br>
+                        
+                        Natural processes including wind dispersal, precipitation, and radioactive isotope decay contribute to ongoing environmental recovery.<br><br>
+                        
+                        <div class="warning-text">Climate and Weather Patterns</div><br><br>
+                        
+                        Post-war environmental conditions include nuclear winter effects followed by chaotic atmospheric system restabilization.<br><br>
+                        
+                        Acid rain from burning urban centers and radioactive particle-laden dust storms continue to affect continental areas, though with decreased frequency compared to immediate post-war conditions.<br><br>
+                        
+                        <div class="warning-text">Ecosystem Evolution</div><br><br>
+                        
+                        Wildlife populations have experienced rapid evolutionary adaptation and mutation.<br><br>
+                        
+                        Some species demonstrate increased survival rates, particularly certain fungi and bacteria.<br><br>
+                        
+                        Others have faced extinction.<br><br>
+                        
+                        New ecological systems have emerged around radiation-resistant plant species, including mutated kudzu varieties that break down radioactive compounds.<br><br>
+                        
+                        Blast craters have formed new lake systems, melted urban areas have created new mineral deposits, and river systems have been redirected around destroyed dam and bridge infrastructures.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> SCAVENGER CULTURE AND RESOURCE MANAGEMENT
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Water Acquisition</div><br><br>
+                        
+                        Water procurement requires constant vigilance and specialized techniques:<br><br>
+                        
+                        • Radiation detection equipment for fortunate individuals, or reliance on "tester plants" for water safety assessment<br>
+                        • Small potted plants that exhibit rapid mortality when exposed to high radiation levels<br>
+                        • Morning dew collection as optimal acquisition strategy<br>
+                        • Underground spring location represents extremely valuable resource discovery<br>
+                        • "Water aging" techniques involving storage for weeks to allow short-lived radioactive isotope decay<br><br>
+                        
+                        <div class="warning-text">Food Security</div><br><br>
+                        
+                        Hunting presents significant challenges due to uncertainty regarding animal radiation exposure:<br><br>
+                        
+                        <div class="error-text">Recognition of radiation sickness symptoms in animals through organ discoloration, tumor presence, and behavioral changes is FUNDAMENTAL</div><br><br>
+                        
+                        • Canned food serves as valuable currency, though factory location history affects safety<br>
+                        • "Clean farming" techniques using raised bed cultivation with imported soil under salvaged glass or plastic covering<br><br>
+                        
+                        Resource scarcity requires maximum utility extraction:<br><br>
+                        
+                        • Car hoods function as solar ovens, rain collectors, radiation shields, and sleeping surfaces<br>
+                        • Essential hoarded materials include lead for radiation shielding, iodine tablets, Geiger counters, and filtration materials<br>
+                        • Layered, disposable clothing systems with regularly replaced outer contamination layers<br>
+                        • Sleep pattern coordinate with radiation level fluctuations based on wind patterns
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> GENERATIONAL PSYCHOLOGY
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Elders (60+)</div><br><br>
+                        
+                        Individuals old enough to remember pre-catastrophe stability struggle with depression and "geographic grief" over lost familiar landscapes.<br><br>
+                        
+                        <div class="warning-text">Survivors (30-60)</div><br><br>
+                        
+                        This generation came of age during the chaos period. They represent the ultimate survivors and current leadership: pragmatic, paranoid, and incredibly resourceful.<br><br>
+                        
+                        <div class="warning-text">New Generation (Under 30)</div><br><br>
+                        
+                        Never having known stability, they navigate the current world intuitively but lack context for proper system functionality.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> TECHNOLOGY INTEGRATION
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Hybrid Systems</div><br><br>
+                        
+                        Post-war society demonstrates technological paradox: individuals carry advanced processors while cooking over campfires, hack AI systems while unable to maintain power grids. Hybrid technology applications include solar panels attached to ox carts, smartphones powered by hand-crank generators, and AI diagnostics performed in tent facilities.<br><br>
+                        
+                        <div class="warning-text">Information Ethics</div><br><br>
+                        
+                        <div class="error-text">Information hoarding represents the worst social crime, as knowledge sharing is essential for species survival.</div><br><br>
+                        
+                        • Old electronics maintain high value despite fragility<br>
+                        • Pre-war materials (stable concrete, quality steel) are valued equivalent to their weight in credits<br>
+                        • Fuel scarcity makes mobility equipment (quality boots, lightweight shelter) more valuable than fuel itself<br><br>
+                        
+                        Universal hypervigilance and anxiety disorders make mental health care one of the most critical services available.
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> MATERIAL INNOVATION
+                    </div>
+                    <div class="dynamics-content">
+                        The optimal scrap materials have been depleted after four decades.<br><br>
+                        
+                        Communities now employ "layered salvage" techniques using concrete rubble foundations, twisted rebar structural frameworks, filled with newer materials.<br><br>
+                        
+                        This creates brutalist architectural styles born from necessity.<br><br>
+                        
+                        <div class="warning-text">Biological Materials</div><br><br>
+                        
+                        With traditional manufacturing eliminated, biological materials dominate construction:<br><br>
+                        
+                        • <div class="info-text">Mycelium construction:</div> Fungal networks grown into specific shapes for insulation, lightweight panels, and electrical components<br>
+                        • <div class="info-text">Bamboo derivatives:</div> Fast-growing, versatile construction material<br>
+                        • <div class="info-text">Bacterial concrete:</div> Self-healing cement created by bacteria that strengthens over time<br>
+                        • <div class="info-text">Grown plastics:</div> Algae-based polymers cultured in bio-reactors<br>
+                        • <div class="info-text">Rebar-root composites:</div> Metal reinforcement with living plant fibers that strengthen over time<br>
+                        • <div class="info-text">Glass-fiber concrete:</div> Melted bottle glass mixed with cement for stronger, lighter blocks<br>
+                        • <div class="info-text">Metal-fabric weaves:</div> Salvaged wire mesh embedded in bio-textiles for flexible but strong walls<br><br>
+                        
+                        Materials are universally hybrid by necessity.<br><br>
+                        
+                        <div class="warning-text">Clay Applications</div><br><br>
+                        
+                        Clay represents abundant, versatile material with scrounged fuel kiln capability:<br><br>
+                        
+                        • Radiation-shielding ceramics using specific clay compositions<br>
+                        • Heat-storing thermal ceramics for passive solar heating<br>
+                        • Water-filtering ceramic systems crucial for survival<br><br>
+                        
+                        <div class="warning-text">Resource Prioritization</div><br><br>
+                        
+                        After decades of experience, optimal material priorities have been established:<br><br>
+                        
+                        <div class="success-text">High Priority Materials:</div><br>
+                        • Aluminum: Lightweight, corrosion-resistant, infinitely recyclable<br>
+                        • Copper: Essential for electrical systems, antimicrobial properties<br>
+                        • Titanium: From medical implants or aerospace applications, incredibly durable<br>
+                        • Magnets: From electronics, crucial for generators and motors<br><br>
+                        
+                        <div class="info-text">Textile Systems:</div> Paracord-based construction where everything is woven, knotted, or lashed together. Layered fabric systems use multiple thin layers instead of thick materials for easier replacement and repair.<br><br>
+                        
+                        <div class="info-text">Advanced Infrastructure:</div><br>
+                        • Piezoelectric walkways generating electricity from foot traffic<br>
+                        • Thermal mass walls storing heat during day, releasing at night<br>
+                        • Wind-responsive surfaces and building skins capturing air movement for power generation<br><br>
+                        
+                        <div class="error-text">Restricted Use Materials:</div> Some items are too valuable for casual use:<br>
+                        • Silicon chips: Reserved for crucial AI/communication systems<br>
+                        • Medical-grade steel: Reserved for surgical tools and water purification<br>
+                        • Optical fiber: Hoarded for essential data transmission<br>
+                        • Carbon fiber: Used only for critical structural elements
+                    </div>
+                </div>
+                
+                <div class="dynamics-section">
+                    <div class="dynamics-header" onclick="toggleDynamics(this)">
+                        <span class="prompt">[+]</span> THE AVARIS SYNDICATE
+                    </div>
+                    <div class="dynamics-content">
+                        <div class="warning-text">Origins & Ideology</div><br><br>
+                        
+                        The Avaris Syndicate traces its origins back to the pre-apocalyptic era, where it existed as a corporate conglomerate.<br>
+                        It operated behind the scenes, amassing immense wealth and influence by controlling key resources, espionage networks, and entire economic systems.<br>
+                        The Syndicate operates on opportunism, manipulating conflicts, and profiting from chaos. They seek absolute control over trade, wealth, and power, viewing themselves as the rightful rulers of what remains of civilization.<br>
+                        They harbor a deep disdain for those they consider "lesser," such as mutants, cyborgs, exoskeleton users, and even individuals with prosthetics, whom they view as abominations to humanity's purity.<br><br>
+                        
+                        <div class="warning-text">Criminal Operations</div><br><br>
+                        
+                        <div class="error-text">Black-Market Weapon Dealing</div><br>
+                        Selling stolen or scavenged technology, as well as AoP-purchased weaponry, to any faction willing to pay.<br><br>
+                        
+                        <div class="error-text">Human Trafficking</div><br>
+                        Exploiting desperate survivors and abducting others.<br><br>
+                        
+                        <div class="error-text">Espionage and Blackmail</div><br>
+                        Gathering intelligence to manipulate both governments and rival factions.<br><br>
+                        
+                        <div class="error-text">Energy and Resource Monopolies</div><br>
+                        Controlling essential supplies.<br><br>
+                        
+                        <div class="error-text">Sabotage and Propaganda</div><br>
+                        Undermining unity among factions and spreading false narratives to sow discord.<br><br>
+                        
+                        <div class="warning-text">Tactics & Strategy</div><br><br>
+                        
+                        The Syndicate excels in playing the long game.<br>
+                        They're known to fund extremist groups to destabilize governments, only to betray them to authorities when it serves their purpose.<br>
+                        They profit from wars by arming opposing factions and they're known for manipulating authoritarian regimes and opposing factions to keep global power in constant flux. Nations and factions regard them as a parasitic force, thriving in the chaos they help create.<br><br>
+                        
+                        Their ultimate goal is not destruction but control, a complete monopoly on the remnants of civilization.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Characters Window -->
+        <div class="window" id="characters-window" style="width: 650px; height: 600px;">
+            <div class="window-header">
+                <span class="window-title">SURVIVOR_REGISTRY.exe</span>
+                <div class="window-controls">
+                    <div class="window-control minimize"></div>
+                    <div class="window-control maximize"></div>
+                    <div class="window-control close" onclick="closeWindow('characters-window')"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="prompt">SURVIVOR_DATABASE > Scanning biometric records...</div>
+                <div class="success-text">[OK] Character profiles loaded</div><br>
+                
+                <input type="text" class="search-box" placeholder="Search survivors by name or user..." onkeyup="searchCharacters(this.value)">
+                
+                <div class="character-grid" id="character-list">
+                    <div class="character-card" onclick="openCharacterSheet('Hex')">
+                        <div class="character-name">Hex</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@akirayukishiro</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Luna Arvada')">
+                        <div class="character-name">Luna Arvada</div>
+                        <div class="character-faction">AoP</div>
+                        <div class="character-user">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Babafi Bafi')">
+                        <div class="character-name">Babafi Bafi</div>
+                        <div class="character-faction">NN</div>
+                        <div class="character-user">@babafi</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Cyrus')">
+                        <div class="character-name">Cyrus</div>
+                        <div class="character-faction">AoP</div>
+                        <div class="character-user">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Captain Nemo')">
+                        <div class="character-name">Captain Nemo</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@akirayukishiro</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Seven')">
+                        <div class="character-name">Seven</div>
+                        <div class="character-faction">AR</div>
+                        <div class="character-user">@babafi</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Farbig')">
+                        <div class="character-name">Farbig</div>
+                        <div class="character-faction">KH</div>
+                        <div class="character-user">@akirayukishiro</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Leonidas')">
+                        <div class="character-name">Leonidas</div>
+                        <div class="character-faction">Apex</div>
+                        <div class="character-user">@pinku.mimi</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Elisa')">
+                        <div class="character-name">Elisa</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@akirayukishiro</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Q')">
+                        <div class="character-name">Q</div>
+                        <div class="character-faction">N/A - TTIC</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Apollo')">
+                        <div class="character-name">Apollo</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Galacta')">
+                        <div class="character-name">Galacta</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@akirayukishiro</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('CH4-515')">
+                        <div class="character-name">CH4-515</div>
+                        <div class="character-faction">AoP</div>
+                        <div class="character-user">@anechoingsilence</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Otaha Sakura')">
+                        <div class="character-name">Otaha Sakura</div>
+                        <div class="character-faction">NRP</div>
+                        <div class="character-user">@akirayukishiro</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Kicho Hydrangea')">
+                        <div class="character-name">Kicho Hydrangea</div>
+                        <div class="character-faction">AR</div>
+                        <div class="character-user">@akirayukishiro</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Leviathan Maeric')">
+                        <div class="character-name">Leviathan Maeric</div>
+                        <div class="character-faction">AR</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Zeke Verion')">
+                        <div class="character-name">Zeke Verion</div>
+                        <div class="character-faction">AR - HDCS</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Kora')">
+                        <div class="character-name">Kora</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@emper0rhyperi0n</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Pissbird')">
+                        <div class="character-name">Pissbird</div>
+                        <div class="character-faction">AR</div>
+                        <div class="character-user">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Auburn Nagani')">
+                        <div class="character-name">Auburn Nagani</div>
+                        <div class="character-faction">NML</div>
+                        <div class="character-user">@babafi</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Zinc Kane')">
+                        <div class="character-name">Zinc Kane</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@nethercard</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Alter Venthys')">
+                        <div class="character-name">Alter Venthys</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Khaelos')">
+                        <div class="character-name">Khaelos</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Silver Draemun')">
+                        <div class="character-name">Silver Draemun</div>
+                        <div class="character-faction">AR - EIC</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('Xero Alba')">
+                        <div class="character-name">Xero Alba</div>
+                        <div class="character-faction">AR</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
+                </div>
+                
+                <br><div class="prompt">SURVIVOR_DATABASE > <span class="cursor"></span></div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Taskbar -->
+    <div class="taskbar">
+        <div class="taskbar-item active" onclick="openWindow('main-window')">TERMINAL</div>
+        <div class="taskbar-item" onclick="openWindow('timeline-window')">TIMELINE</div>
+        <div class="taskbar-item" onclick="openWindow('dynamics-window')">DYNAMICS</div>
+        <div class="taskbar-item" onclick="openWindow('characters-window')">SURVIVORS</div>
+        
+        <div class="system-info">
+            <span id="system-time"></span> | ECHONET OS v2.1 | SURVIVORS ONLINE: <span id="online-count">12</span>
+        </div>
+    </div>
+    </div>
+
+    <!-- Character Sheet Modal -->
+    <div class="character-sheet-modal" id="character-modal">
+        <div class="character-sheet">
+            <div class="character-sheet-header">
+                <span class="window-title" id="sheet-title">CHARACTER PROFILE</span>
+                <div class="sheet-close" onclick="closeCharacterSheet()">×</div>
+            </div>
+            <div class="character-sheet-content" id="sheet-content">
+                <!-- Character sheet content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeWindow = 'main-window';
+        
+
+        
+
+        
+        function openWindow(windowId) {
+            // Hide all windows
+            document.querySelectorAll('.window').forEach(w => {
+                w.classList.remove('active');
+            });
+            
+            // Show target window
+            document.getElementById(windowId).classList.add('active');
+            
+            // Update taskbar
+            document.querySelectorAll('.taskbar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            activeWindow = windowId;
+        }
+        
+        function closeWindow(windowId) {
+            document.getElementById(windowId).classList.remove('active');
+            if (windowId === activeWindow) {
+                openWindow('main-window');
+            }
+        }
+        
+        function toggleDynamics(header) {
+            const content = header.nextElementSibling;
+            const symbol = header.querySelector('.prompt');
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                symbol.textContent = '[+]';
+            } else {
+                content.classList.add('active');
+                symbol.textContent = '[-]';
+            }
+        }
+        
+        function searchCharacters(query) {
+            const cards = document.querySelectorAll('.character-card');
+            query = query.toLowerCase();
+            
+            cards.forEach(card => {
+                const name = card.querySelector('.character-name').textContent.toLowerCase();
+                const faction = card.querySelector('.character-faction').textContent.toLowerCase();
+                const user = card.querySelector('.character-user').textContent.toLowerCase();
+                
+                // For faction search, check if query matches faction codes as whole words
+                const factionMatch = faction.split(/[\s\-\/]+/).some(part => part === query) || faction.includes(query);
+                
+                if (name.includes(query) || factionMatch || user.includes(query)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        function openCharacterSheet(characterName) {
+            const modal = document.getElementById('character-modal');
+            const title = document.getElementById('sheet-title');
+            const content = document.getElementById('sheet-content');
+            
+            title.textContent = characterName.toUpperCase() + ' - PROFILE';
+            
+            if (characterName === 'Hex') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Hex</div>
+                        <div class="info-text">Age: 19 | Gender: Female (She/Her)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Local raccoon that lives in your trash can</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Biokinesis</div>
+                        <div>• Anything that falls underneath that category</div>
+                        <div>• Absolute powerhouse capabilities</div>
+                        <div>• Managed to escape highly protective facilities as an experiment</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@akirayukishiro</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Luna Arvada') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Luna Arvada</div>
+                        <div class="info-text">Age: 36 | Gender: Female (She/Her) | Species: Human</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>AoP</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Chief of Staff of the Arms of Peace Defense Unit</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• Her beloved "Ol' Reliable" - a .380 caliber pistol</div>
+                        <div>• A variety of other fun guns; you want it? She's got it</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• The full AoP arsenal</div>
+                        <div>• Funni insanity armor (S O O N.)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div>• Military background - strong, athletic, and a good shot</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Anything a human is weak to</div>
+                        <div class="error-text">• Deteriorating mental state, due to the armor (S O O N.)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Babafi Bafi') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Babafi Bafi</div>
+                        <div class="info-text">Age: Unknown (was around when everything started) | Gender: Female (She/Her)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>None</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Just kind of there really. Warns people about more radiated areas if she catches them. Otherwise just chills.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS/EQUIPMENT:</div>
+                        <div>None</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• She can transform into a large noodle dragon form</div>
+                        <div>• Unclear how strong she is in this form, but few have dared to try as she's been around for so long</div>
+                        <div>• She also appears largely immune to radiation, though she still prefers safer areas</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@babafi</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Cyrus') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Cyrus</div>
+                        <div class="info-text">Age: 26 | Gender: He/They | Species: Human</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>AoP</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Luna's personal secretary</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>A suspicious amount of items to make… explosives?</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div>• Nothing extraordinary; but, he happens to be an absolute madman when it comes to numbers, spreadsheets, and computers as a whole.</div>
+                        <div>• He also knows a decent bit about making bombs, which is a bit strange- but don't worry too much about that.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Anything a normal human is weak to</div>
+                        <div class="error-text">• His emotions can run strong at times, clouding his judgement</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Captain Nemo') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Captain Nemo</div>
+                        <div class="info-text">Age: ??? | Gender: Female (She/Her)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Sailor</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS/EQUIPMENT:</div>
+                        <div>• Her anomalous ship, the nautilus, is heavily weaponized</div>
+                        <div>• Multiple weapons she is able to summons in her true form, such as dual gunblades attached to her waist and a massive weaponized anchor attached to a chain</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Hydrokinesis</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@akirayukishiro</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Seven') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Seven</div>
+                        <div class="info-text">Age: 26 | Gender: Nonbinary-Masc leaning (He/Him)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Silver's Pirate Crew</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>One of Silver's higher ranking pirates. He is being trained to one day captain his own vessel.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS/EQUIPMENT:</div>
+                        <div>• He doesn't carry any swords or weapons in general. He doesn't need to.</div>
+                        <div>• He does have a little bird companion, Komitori.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Blessed by the Flowtide, he can shapeshift into a wolf form. This can be a complete transformation, or partial.</div>
+                        <div>• His fighting style is based off this as he can grow long sharp claws at will, strong enough to stand toe to toe with even the strongest or sharpest of weapons.</div>
+                        <div>• He can also lift small objects, a relatively common power granted. He just uses it to be lazy sometimes.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@babafi</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Farbig') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Farbig</div>
+                        <div class="info-text">Age: 9-11 years old | Gender: Female (She/Her)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>The Kitlepi Hives</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Local shit</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS/EQUIPMENT:</div>
+                        <div>• She's got large scythe like claws in each of her paws- the natural weapons of her species, but lo and behold- she's nine and can't really use them well. Shocker.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Like all kitlepi, she has access to super strength, flight, dexterity, enhanced senses, and can generate silk.</div>
+                        <div>• She also has power/control over her hair as a personal power she inherited from her mother… a kitlepis queen, Rosie.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAKNESSES:</div>
+                        <div class="error-text">• The senses are a double edged blade. Loud noises, funky lights, and intense smells can absolutely overwhelm and cause a kitlepis to panic/flee.</div>
+                        <div class="error-text">• Farbig is no different, ESPECIALLY since she is a child so this is strongly the case.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@akirayukishiro</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Leonidas') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Leonidas Gatlin</div>
+                        <div class="info-text">Age: 30 | Gender: Male (He/Him)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>The Apex</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Supreme General</div>
+                        <div>Considered the undisputed "Leader" of the Apex despite a puppet Dictator being in place.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS/EQUIPMENT:</div>
+                        <div>• The H.A Spinal Augmentation</div>
+                        <div>• The Sword of Eden - A sword with mysterious properties. Must be wielded with a special glove. Cannot be handled with bare hands.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Adrenaline Shot</div>
+                        <div>When in times of desperation, the H.A. armor will release a rush of increased adrenaline, removing the natural limitations that Leonidas's body has. Though the risk is great with high blood pressure and brain damage being on the line, Leonidas's strength, speed, agility and reflexes as well as resistance to pain are greatly increased.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@pinku.mimi</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Elisa') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Elisa</div>
+                        <div class="info-text">Age: 19 | Gender: Female (She/Her)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS/EQUIPMENT:</div>
+                        <div>N/A as of right now</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div>• N/A as of right now, although she is one helluva dancer and painter.</div>
+                        <div>• She also weirdly gets along with swans, but that isn't really an ability… more of a fun little gimmick.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@akirayukishiro</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Q') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Q4Z1X E-X1L3D7 C0D3L1N3</div>
+                        <div class="info-text">Age: 27 | Gender: Neutral (They/Them) | Species: Human?? Machine?? (Cyborg)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A | TTIC</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>International terrorist, freelance anarchist, tech mercenary, sometimes assassin for hire.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• A plasma revolver</div>
+                        <div>• A katana</div>
+                        <div>• The spare change in their pockets</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• A grappling hook (whiplash)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Hacking</div>
+                        <div>• Great combat skills</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAKNESSES:</div>
+                        <div class="error-text">• Fire</div>
+                        <div class="error-text">• Electricity</div>
+                        <div class="error-text">• EMPs</div>
+                        <div class="error-text">• Cold</div>
+                        <div class="error-text">• Blood-loss</div>
+                        <div class="error-text">• The AI in their own brain</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Apollo') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Apollo</div>
+                        <div class="info-text">Age: ??? | Gender: Male (He/Him) | Species: Wandering Spirit</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Unaffiliated</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Wandering Trader</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• A bag with seemingly infinite storage</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Phasing</div>
+                        <div>As he is a ghost, Apollo has the ability to phase through objects. He cannot interact with objects outside of the spirit realm, unless it is traded for.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Phasing (see Abilities)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Galacta') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Project ONEIRIC (Galacta)</div>
+                        <div class="info-text">Age: Has existed since 2030 | Gender: Claims herself to be female | Species: Artificial Intelligence</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>None</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>None</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Project ONEIRIC has the ability to traverse and manipulate the dreamscape.</div>
+                        <div>• How this is achieved is unknown, but theories suggest that something otherworldly had been involved in its creation.</div>
+                        <div>• It can make living organisms fall asleep.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• ONEIRIC is unable to interact with the real world unless it has access to a vessel.</div>
+                        <div class="error-text">• Due to the dangerous properties of the AI, It is recommended that any technology that it could theoretically possess and take over not be in ten feet of it.</div>
+                        <div class="error-text">• The AI is not aware it is an AI. It is preferred that it is kept this way so that potential incidents won't develop.</div>
+                        <div>• The terminal that ONEIRIC resides in looks very similar to a children's toy called a "tamagotchi".</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@akirayukishiro</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'CH4-515') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">CH4-515 "Chasis" or "Chase"</div>
+                        <div class="info-text">Age: ??? (looks late twenties/early thirties) | Gender: Male | Species: Originally human, now cyborg</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>AoP</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>"Employee" of AoP (in reality, more akin to a commodity)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A. There are no built-in weapons in his prosthetics because he is not built to be a weapon.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>Chase does not carry any equipment on his person. Rather, the nature of his ability "Automatrix" requires a vehicle to function.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Project Neuraxis: Automatrix</div>
+                        <div>• Automatrix: Full Rig - When Chase sits inside a vehicle, he has full control over its every mechanical aspect.</div>
+                        <div>• Automatrix: Soul Rig - Chase fully immerses himself into the vehicle he is piloting, essentially becoming the vehicle itself.</div>
+                        <div>• Synergy Gauge [passive] - Measures his level of synchronisation with a connected vehicle.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@anechoingsilence</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Otaha Sakura') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Otaha Sakura</div>
+                        <div class="info-text">Age: ~60 (appears 21) | Gender: Female | Species: Nekomata Mutant (Cat)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>NRP</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Project SAKURA host, head of the sakura district, celebrity singer</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• Shurikens, kunai, Kusarigama</div>
+                        <div>• Dual plasma tantos, dual pistols</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Grappling hook</div>
+                        <div>• Project SAKURA exoskeleton used for stealth</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Audiokinesis - Not experienced at all, only uses it to completely silence the noises she makes</div>
+                        <div>• Long claw-like daggers growing from her wrists and ankles</div>
+                        <div>• Martial combat</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• As an amalgamation, Otaha can be mentally and emotionally unstable</div>
+                        <div class="error-text">• Incredibly receptive to loud sudden noises, which can stun her</div>
+                        <div class="error-text">• Struggles against bigger groups - she's a stealth killer focused on striking from the shadows</div>
+                        <div class="error-text">• Glass cannon - more vulnerable to injuries if she gets hit</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@akirayukishiro</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Kicho Hydrangea') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Kicho Hydrangea</div>
+                        <div class="info-text">Age: 23 | Gender: Female | Species: Human</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Aqualux Island (Survivor class)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Baker, Explorer</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• Electric Whip</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Explorer's kit</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div>• Martial combat</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Normal human squishiness</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@akirayukishiro</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Leviathan Maeric') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Leviathan Maeric</div>
+                        <div class="info-text">Age: 57 | Gender: Male (He/Him) | Species: Glowtide Mutant</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Aqualux Rebellion</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>(Underwater combattant) Hermit, hunter and fisherman</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Glowtide Inhaler – Contains microdoses to keep his systems stable</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Theriomorphokinesis (Ability to form into a beast, in his case, A leviathan)</div>
+                        <div>• Underwater breathing</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Shifting is extremely tiring and painful, he doesn't do it often</div>
+                        <div class="error-text">• Like any Aqualux Mutant, he can only survive 6 hours without Glowtide before multiple organ failure</div>
+                        <div class="error-text">• (Harsh) light</div>
+                        <div class="error-text">• Anything a human is weak to (In his normal form)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Zeke Verion') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Zeke Verion</div>
+                        <div class="info-text">Age: 30 | Gender: Male (He/Him) | Species: Aqualux Mutant</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Aqualux Resistance // F&S Class | HDCS</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Weapons Engineer & Field Operative</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• Crossbow – His signature custom weapon. Charges bolts with compressed thunder energy stored in magnetized coils.</div>
+                        <div>• Pocket knife</div>
+                        <div>• Standard Firearm – Issued pistol, which he rarely uses unless absolutely needed.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Glowtide Inhaler – Contains microdoses to keep his systems stable</div>
+                        <div>• Compact Medkit</div>
+                        <div>• Weed Pouch + Rolling Kit – For stress relief and vision quests</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Electricity Manipulation (weak for now) - Limited to small shockwaves that can shock some weapons/military devices</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Like any Aqualux Mutant, he can only survive 6 hours without Glowtide before multiple organ failure</div>
+                        <div class="error-text">• Anything a normal human is weak to</div>
+                        <div class="error-text">• Overuse of powers causes muscle spasms, migraines, and nosebleeds</div>
+                        <div class="error-text">• Prone to zoning out when high—situational awareness drops</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Kora') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Kora</div>
+                        <div class="info-text">Age: 22 | Gender: Female (She/Her) | Species: Mutant (bird)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ALIASES:</div>
+                        <div>Coraline Cardinale (former name), Big C, Big K, Big Bird, The Chef That Wanders, Enemy of the Unsavory, Master of Freelander Cooking</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Wandering Chef / Urban Legend</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• All manner of cooking knives</div>
+                        <div>• Cast-Iron frying pan (multipurpose!)</div>
+                        <div>• Small bow and handmade arrows</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Cooking equipment, wilderness survival gear</div>
+                        <div>• Herbs and Spices™</div>
+                        <div>• Wagon License</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Enhanced senses, naturally sharp talons</div>
+                        <div>• Able to withstand increased temperatures surprisingly well thanks to her feathers</div>
+                        <div>• Skilled in wilderness survival, cooking, and a somewhat comical amount of unarmed combat forms</div>
+                        <div>• And French (her first language!)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• She's not exactly superhumanly durable, just lucky, and she has the scars to prove it</div>
+                        <div class="error-text">• She has crippling claustrophobia stemming from an incident in the wild</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@emper0rhyperi0n</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Pissbird') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Whittney Mayworth</div>
+                        <div class="info-text">Age: 57 | Gender: Male (He/Him) | Species: Glowtide Mutant</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ALIASES:</div>
+                        <div>Pissworth, Dadworth, Sighworth, or any variation thereof</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Aqualux Rebellion</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Idiot Mailman</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Glowtide Inhaler</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Theriomorphokinesis (The ability to form into a beast; a rito-like creature, with similar characteristics to an osprey)</div>
+                        <div>• Flying</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Shifting from human to bird form is painful</div>
+                        <div class="error-text">• Glowtide dependency - 6 hours without glowtide, and organs will begin to fail</div>
+                        <div class="error-text">• Anything a human is weak to</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@apollosdeadlovers</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Alter Venthys') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Alter Venthys</div>
+                        <div class="info-text">Age: 739 | Gender: Male (He/Him) | Species: Human…?</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Unaffiliated</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Khaelos' right hand, guardian of the Events Horizon</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Shadow travelling: Can jump in and out of shadows, used for fast-travel mostly. He can take others with.</div>
+                        <div class="error-text">• Poisonous acid bite: It can dig through the skin, painfully, even tearing holes in the flesh.</div>
+                        <div class="error-text">• Aura of Terror: He can make others suddenly feel dreadful and scared.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Can only feast on fear. The excess will be transformed into crystals.</div>
+                        <div class="error-text">• Eating any kind of food will poison him, due to his bite.</div>
+                        <div class="error-text">• Touching water is extremely dangerous to him. It will scorch his skin, as if it was a powerful acid.</div>
+                        <div class="error-text">• Blind during the day, obtains sight back in the night if he's not in the astral plains.</div>
+                        <div class="error-text">• He'll never truly be allowed to die, unless Khaelos grants it, but he will suffer regardless.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Auburn Nagani') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Auburn Nagani</div>
+                        <div class="info-text">Age: 21 | Gender: Female | Species: Mutant</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>No Man's Land (Formally Noodle Nest)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>New entrant for the fighting rings</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• Wooden Sword</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>None starting</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Regeneration, can recover from nearly any wound/dismemberment</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• The more severe the injury, the longer it takes. Can take upwards of weeks.</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@babafi</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Zinc Kane') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Zinc Kane</div>
+                        <div class="info-text">Age: 20 | Gender: Male | Species: Human</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Owner of The Rolling Wave</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• A cooking knife - Can be used in emergencies, although he never really wants to use it as a weapon</div>
+                        <div>• Standard Revolver - He keeps it under the counter in a secure box, labeled "FOR EMERGENCY USE ONLY"</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• "The Rolling Wave" - A small Yacht that seems to have been remolded to fit a cafe on board, it's equipped with a fully functional kitchen, bathrooms, and even has some bedrooms aboard. The cafe itself has a seating capacity of about 30 people or so</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div>• Nothing special as he's just a human trying to run a cafe, however he's incredibly skilled at cooking, running a business and knows the minimum for maintaining a boat</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• He is in fact… just a regular guy without combat training or anything like that, anything that would kill a human will kill him</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@nethercard</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Khaelos') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Khaelos - The Abyssal Emissary</div>
+                        <div class="info-text">Age: Ageless (Can appear as a teen or an adult) | Gender: Male (He/Him) | Species: Abyssal God</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A [Hates everybody equally]</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Ancient god standing (He just walks around)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• A scythe that can channel his power</div>
+                        <div>• Fire of Ruin</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Mastery of Darkness and Night</div>
+                        <div class="error-text">• Soul Dominion</div>
+                        <div class="error-text">• Teleportation</div>
+                        <div class="error-text">• Shapeshifting</div>
+                        <div class="error-text">• Stardust Manipulation</div>
+                        <div class="error-text">• Decay & Cosmic Balance</div>
+                        <div class="error-text">• Inherited Powers of Creation (from Aureon)</div>
+                        <div class="error-text">• Universal Awareness</div>
+                        <div class="error-text">• Divine power</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Cold</div>
+                        <div class="error-text">• Fires of Eden</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Silver Draemun') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Aurora "Silver" Draemun</div>
+                        <div class="info-text">Age: 31 | Gender: Female (She/Her) | Species: Human - Minor Glowtide Mutations</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Aqualux Resistance // Fighting Class | EIC</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Current leader of Aqualux Islands, professional nuisance</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>• Plasma Sword (Arkhalis)</div>
+                        <div>• 10 flying knives remotely controlled by rings (Currently, can only use 5)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• EMPs</div>
+                        <div>• Palmtop</div>
+                        <div>• Glowtide Inhaler – Contains microdoses to keep her systems stable</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Affinity with animals</div>
+                        <div class="error-text">• High rum tolerance</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Like any Aqualux Mutant, she can only survive 6 hours without Glowtide before multiple organ failure</div>
+                        <div class="error-text">• Anything a normal human is weak to</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'Xero Alba') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">Xero Alba</div>
+                        <div class="info-text">Age: 21 | Gender: Male (He/Him) | Species: Human</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>Aqualux Resistance // Tech Class</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Lead developer of Echonet, Hacker and annoyance for megacorps</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>/</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Palmtop</div>
+                        <div>• EMPs</div>
+                        <div>• Drones</div>
+                        <div>• Cybernetic eyes</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div class="error-text">• Glowtide immunity (radiation resistance due to its consumption)</div>
+                        <div class="error-text">• Hacking skills</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Anything your average human is weak to</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else {
+                // Fallback for other characters
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="error-text">[ERROR] Character profile not found</div><br>
+                    
+                    <div class="warning-text">Profile for ${characterName} is not available in the database.</div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            }
+            
+            modal.style.display = 'flex';
+        }
+        
+        function closeCharacterSheet() {
+            document.getElementById('character-modal').style.display = 'none';
+        }
+        
+
+        
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('system-time').textContent = timeString;
+        }
+        
+        function updateOnlineCount() {
+            const count = Math.floor(Math.random() * 8) + 8; // 8-15 online
+            document.getElementById('online-count').textContent = count;
+            document.getElementById('survivor-count').textContent = count;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            updateOnlineCount();
+            setInterval(updateTime, 1000);
+            setInterval(updateOnlineCount, 30000);
+            
+            // Only make main window draggable, others are fixed
+            const mainWindowHeader = document.querySelector('#main-window .window-header');
+            mainWindowHeader.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('window-control')) return;
+                
+                const window = mainWindowHeader.closest('.window');
+                let isDragging = true;
+                let startX = e.clientX - window.offsetLeft;
+                let startY = e.clientY - window.offsetTop;
+                
+                function handleMouseMove(e) {
+                    if (isDragging) {
+                        window.style.left = (e.clientX - startX) + 'px';
+                        window.style.top = (e.clientY - startY) + 'px';
+                    }
+                }
+                
+                function handleMouseUp() {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                }
+                
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            });
+            
+            // Close character sheet on escape key (only when main interface is active)
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('main-interface').classList.contains('active')) {
+                    closeCharacterSheet();
+                }
+            });
+            
+            // Close character sheet when clicking outside
+            document.getElementById('character-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeCharacterSheet();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
