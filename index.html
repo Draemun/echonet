@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -595,6 +596,9 @@
                     </div>
                     <div class="menu-item" onclick="openWindow('characters-window')">
                         > <span class="status-indicator online"></span>SURVIVORS.exe - Character Profiles
+                    </div>
+                    <div class="menu-item" onclick="openWindow('storyposts-window')">
+                        > <span class="status-indicator online"></span>STORYPOSTS.exe - Story Archive
                     </div>
                     
                     <br><br>
@@ -1390,6 +1394,35 @@
             </div>
         </div>
 
+        <!-- Storyposts Window -->
+        <div class="window" id="storyposts-window">
+            <div class="window-header">
+                <span class="window-title">STORY_ARCHIVE.exe</span>
+                <div class="window-controls">
+                    <div class="window-control minimize"></div>
+                    <div class="window-control maximize"></div>
+                    <div class="window-control close" onclick="closeWindow('storyposts-window')"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="prompt">STORY_ARCHIVE > Accessing narrative database...</div>
+                <div class="success-text">[OK] Archive loaded</div><br>
+                
+                <div style="margin-bottom: 20px;">
+                    <div class="warning-text">SEARCH:</div>
+                    <input type="text" id="story-search" placeholder="Search stories..." 
+                           style="background: #001100; border: 1px solid #00ff00; color: #00ff00; padding: 5px; width: 300px; font-family: 'Courier New', monospace;" 
+                           oninput="filterStories()">
+                </div>
+                
+                <div id="story-list" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Stories will be populated here -->
+                </div>
+                
+                <br><div class="prompt">STORY_ARCHIVE > <span class="cursor"></span></div>
+            </div>
+        </div>
+
         <!-- Characters Window -->
         <div class="window" id="characters-window">
             <div class="window-header">
@@ -1571,6 +1604,7 @@
         <div class="taskbar-item" onclick="openWindow('timeline-window')">TIMELINE</div>
         <div class="taskbar-item" onclick="openWindow('dynamics-window')">DYNAMICS</div>
         <div class="taskbar-item" onclick="openWindow('characters-window')">SURVIVORS</div>
+        <div class="taskbar-item" onclick="openWindow('storyposts-window')">STORYPOSTS</div>
         
         <div class="system-info">
             <span id="system-time"></span> | ECHONET OS v2.1 | SURVIVORS ONLINE: <span id="online-count">12</span>
@@ -3009,6 +3043,68 @@
             document.getElementById('character-modal').style.display = 'none';
         }
         
+        // Story management
+        let stories = [
+            { title: "Chat, is it gay?", character: "Silver", link: "https://docs.google.com/document/d/1RMJLHSxz7AejvaO9vxOKn9J5j3kviwWqS7qqv1QNRyc/edit?usp=sharing", event: null, timestamp: new Date() },
+            { title: "The Q-Series", character: "Lore", link: "https://docs.google.com/document/d/1lf7t1-gLa74kFYGeIOKbfZUH1e-OJDOk7WEoD5Ud_Io/edit?usp=sharing", event: null, timestamp: new Date() },
+            { title: "Funni pirate meets funni child", character: "Silver", link: "https://docs.google.com/document/d/1lf7t1-gLa74kFYGeIOKbfZUH1e-OJDOk7WEoD5Ud_Io/edit?usp=sharing", event: null, timestamp: new Date() },
+            { title: "Do robots dream of eternal sleep?", character: "Q", link: "https://docs.google.com/document/d/1TNds3qogMCRTRwV4cFHWHQ51697ErbILMO4Qdvy4VEM/edit?usp=sharing", event: null, timestamp: new Date() },
+            { title: "3RR0R", character: "Q", link: "https://docs.google.com/document/d/1YFdmPwHIm3damZ68R3mvxGV5NFM3u1JHXzefqdG_aMI/edit?usp=sharing", event: null, timestamp: new Date() },
+            { title: "The way it ended", character: "Khaelos", link: "https://docs.google.com/document/d/1I5ZrihP1Bd_2vvIxWOw17I57_aXHt08gy43WFxH-bZc/edit?usp=sharing", event: "Lore", timestamp: new Date() },
+            { title: "Step step turn", character: "Q", link: "https://docs.google.com/document/d/1dkvChpXPrbW8H2SYFkJ_qYh-D5zsK5BlVwesowX59f0/edit?usp=sharing", event: null, timestamp: new Date() },
+            { title: "Dancers in the night", character: "Q", link: "https://docs.google.com/document/d/1yBbpUHjFjmP4GduLh5WLgWCHee2qYDqATmpnby2yIoc/edit?usp=sharing", event: "Event 1", timestamp: new Date() },
+            { title: "...", character: "Q", link: "https://docs.google.com/document/d/1BVYffwNah1Ba07wvgItqrCK3h01aE7RAGO_mN-H_KCM/edit?usp=sharing", event: "Event 1", timestamp: new Date() },
+            { title: "Blood and Tears", character: "Q", link: "https://docs.google.com/document/d/1RyaTkUBXHSwriQE6qaUrxFn7OHJvpFb_Vi_RQl8UVE0/edit?usp=drivesdk", event: "Event 1", timestamp: new Date() }
+        ];
+        
+        function showAddStoryForm() {
+            const title = prompt('Story Title:');
+            if (!title) return;
+            
+            const character = prompt('Character:');
+            if (!character) return;
+            
+            const link = prompt('Story Link:');
+            if (!link) return;
+            
+            const event = prompt('Event (optional):') || null;
+            
+            addStory(title, character, link, event);
+        }
+        
+        function addStory(title, character, link, event) {
+            stories.push({ title, character, link, event, timestamp: new Date() });
+            renderStories();
+        }
+        
+        function renderStories() {
+            const container = document.getElementById('story-list');
+            const searchTerm = document.getElementById('story-search').value.toLowerCase();
+            
+            const filteredStories = stories.filter(story => {
+                const character = story.character.toLowerCase();
+                const event = story.event ? story.event.toLowerCase() : '';
+                const title = story.title.toLowerCase();
+                return character.includes(searchTerm) || event.includes(searchTerm) || title.includes(searchTerm);
+            });
+            
+            container.innerHTML = filteredStories.map(story => `
+                <div style="border: 1px solid #004400; margin-bottom: 10px; padding: 10px; background: #001a00;">
+                    <div class="info-text" style="font-size: 14px; margin-bottom: 5px;">${story.title}</div>
+                    <div style="margin-bottom: 5px;">
+                        ${story.character}${story.event ? ` | ${story.event}` : ''}
+                    </div>
+                    <div style="margin-bottom: 5px;">
+                        <a href="${story.link}" target="_blank" style="color: #00aa00; text-decoration: underline; cursor: pointer;">Link</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterStories() {
+            renderStories();
+        }
+        
 
         
         function updateTime() {
@@ -3027,6 +3123,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateTime();
             updateOnlineCount();
+            renderStories();
             setInterval(updateTime, 1000);
             setInterval(updateOnlineCount, 30000);
             
