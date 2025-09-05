@@ -81,6 +81,12 @@
             font-size: 11px;
         }
         
+        @media (max-width: 767px) {
+            .system-info {
+                display: none;
+            }
+        }
+        
         .window {
             position: fixed !important;
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
@@ -96,6 +102,7 @@
             width: 100vw !important;
             height: calc(100vh - 40px) !important;
             transform: none !important;
+            z-index: 200;
         }
         
         @media (min-width: 768px) {
@@ -172,6 +179,14 @@
             position: relative;
             scrollbar-width: thin;
             scrollbar-color: #00ff00 #1a1a1a;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        @media (max-width: 767px) {
+            .window-content {
+                padding: 15px;
+            }
         }
         
         .window-content::-webkit-scrollbar {
