@@ -1604,6 +1604,12 @@
                         <div class="character-faction">AR</div>
                         <div class="character-user">@niyren</div>
                     </div>
+                    
+                    <div class="character-card" onclick="openCharacterSheet('PIP')">
+                        <div class="character-name">PIP</div>
+                        <div class="character-faction">N/A</div>
+                        <div class="character-user">@niyren</div>
+                    </div>
                 </div>
                 
                 <br><div class="prompt">SURVIVOR_DATABASE > <span class="cursor"></span></div>
@@ -2539,7 +2545,7 @@
                     
                     <div style="margin-bottom: 15px;">
                         <div class="warning-text">WEAPONS:</div>
-                        <div>• Crossbow – His signature custom weapon. Charges bolts with compressed thunder energy stored in magnetized coils.</div>
+                        <div>• Fans – His signature custom weapons, as sharp as razors.</div>
                         <div>• Pocket knife</div>
                         <div>• Standard Firearm – Issued pistol, which he rarely uses unless absolutely needed.</div>
                     </div>
@@ -3025,6 +3031,60 @@
                     <div style="margin-bottom: 15px;">
                         <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
                         <div class="error-text">• Anything your average human is weak to</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ROLEPLAYER:</div>
+                        <div class="info-text">@niyren</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">CURRENT STATUS:</div>
+                        <div class="success-text">Active</div>
+                    </div>
+                    
+                    <br><div class="prompt">PROFILE_SYSTEM > <span class="cursor"></span></div>
+                `;
+            } else if (characterName === 'PIP') {
+                content.innerHTML = `
+                    <div class="prompt">BIOMETRIC_SCAN > Loading character data...</div>
+                    <div class="success-text">[OK] Profile accessed</div><br>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div class="character-name" style="font-size: 18px; margin-bottom: 10px;">PIP (Plant Interface Protocol)</div>
+                        <div class="info-text">Age: 43 | Gender: N/A (It/Its) | Species: Physical AI</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">FACTION:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">OCCUPATION:</div>
+                        <div>Specialized agricultural AI prototype</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">WEAPONS:</div>
+                        <div>N/A</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">EQUIPMENT:</div>
+                        <div>• Eden's Sporevine 🌴</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">ABILITIES:</div>
+                        <div>• Can grow crops (optional)</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div class="warning-text">SIDE EFFECTS/WEAKNESSES:</div>
+                        <div class="error-text">• Faulty AI, constant glitches, stutters in speech, difficulty in recognising patterns</div>
+                        <div class="error-text">• EMPs</div>
+                        <div class="error-text">• Extreme temperatures</div>
                     </div>
                     
                     <div style="margin-bottom: 15px;">
