@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echonet Terminal OS</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="login-screen" id="login-screen">
+        <div class="login-terminal">
+            <div class="login-title">ECHONET SECURE ACCESS</div>
+            <div class="prompt">AUTHENTICATION REQUIRED</div>
+            <div class="success-text">[SYSTEM] Terminal connection established</div>
+            <div class="warning-text">[SECURITY] Unauthorized access prohibited</div>
+            <br>
+            <form class="login-form" onsubmit="return false;">
+                <input type="text" class="login-input" id="username" value="NullProtocol_FFx0" readonly autocomplete="off">
+                <input type="password" class="login-input" id="password" placeholder="Password" autocomplete="off">
+                <button type="button" class="login-button" onclick="attemptLogin()">ACCESS TERMINAL</button>
+                <div class="login-error" id="login-error">[ERROR] Invalid credentials. Access denied.</div>
+            </form>
+            <div class="info-text">Eternity is the key</div>
+            <div class="info-text">ECHONET OS v2.1 | Secure Terminal</div>
+        </div>
+    </div>
+    
+    <div class="main-interface" id="main-interface">
+        <div class="desktop">
+            <div class="window active" id="main-window">
+                <div class="window-header">
+                    <span class="window-title">ECHONET_TERMINAL.exe</span>
+                    <div class="window-controls">
+                        <div class="window-control minimize"></div>
+                        <div class="window-control maximize"></div>
+                        <div class="window-control close"></div>
+                    </div>
+                </div>
+                <div class="window-content">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <span class="success-text">SYSTEM STATUS: OPERATIONAL</span><br>
+                        <span class="info-text">CONNECTED SURVIVORS: <span id="survivor-count">12</span></span><br>
+                        <span class="warning-text">RADIATION LEVEL: MODERATE</span>
+                    </div>
+                    <div>
+                        <div class="prompt">root@echonet:~$</div> <span class="info-text">Welcome to the EchoNet Network</span><br><br>
+                        <div class="success-text">Available terminals:</div><br>
+                        <div class="menu-item" onclick="openWindow('timeline-window')">
+                            > <span class="status-indicator online"></span>TIMELINE.exe - Historical Events Archive
+                        </div>
+                        <div class="menu-item" onclick="openWindow('dynamics-window')">
+                            > <span class="status-indicator online"></span>SERVER_DYNAMICS.exe - Faction & Rules Database  
+                        </div>
+                        <div class="menu-item" onclick="openWindow('characters-window')">
+                            > <span class="status-indicator online"></span>SURVIVORS.exe - Character Profiles
+                        </div>
+                        <div class="menu-item" onclick="openWindow('storyposts-window')">
+                            > <span class="status-indicator online"></span>STORYPOSTS.exe - Story Archive
+                        </div>
+                        <br><br>
+                        <div class="prompt">root@echonet:~$</div> <span class="cursor"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="window" id="timeline-window">
+                <div class="window-header">
+                    <span class="window-title">TIMELINE_DATABASE.exe</span>
+                    <div class="window-controls">
+                        <div class="window-control minimize"></div>
+                        <div class="window-control maximize"></div>
+                        <div class="window-control close" onclick="closeWindow('timeline-window')"></div>
+                    </div>
+                </div>
+                <div class="window-content">
+                    <div class="prompt">TEMPORAL_DATABASE > Loading historical events...</div>
+                    <div class="success-text">[OK] Archive accessible</div><br>
+                    <div id="timeline-content" style="max-height: 400px; overflow-y: auto;"></div>
+                    <br><div class="prompt">TEMPORAL_DATABASE > <span class="cursor"></span></div>
+                </div>
+            </div>
+
+            <div class="window" id="dynamics-window">
+                <div class="window-header">
+                    <span class="window-title">SERVER_DYNAMICS.exe</span>
+                    <div class="window-controls">
+                        <div class="window-control minimize"></div>
+                        <div class="window-control maximize"></div>
+                        <div class="window-control close" onclick="closeWindow('dynamics-window')"></div>
+                    </div>
+                </div>
+                <div class="window-content">
+                    <div class="prompt">DYNAMICS_DATABASE > Compiling server documentation...</div>
+                    <div class="success-text">[OK] Dynamic systems loaded</div><br>
+                    <div id="dynamics-content" style="max-height: 400px; overflow-y: auto;"></div>
+                    <br><div class="prompt">DYNAMICS_DATABASE > <span class="cursor"></span></div>
+                </div>
+            </div>
+
+            <div class="window" id="storyposts-window">
+                <div class="window-header">
+                    <span class="window-title">STORY_ARCHIVE.exe</span>
+                    <div class="window-controls">
+                        <div class="window-control minimize"></div>
+                        <div class="window-control maximize"></div>
+                        <div class="window-control close" onclick="closeWindow('storyposts-window')"></div>
+                    </div>
+                </div>
+                <div class="window-content">
+                    <div class="prompt">STORY_ARCHIVE > Accessing narrative database...</div>
+                    <div class="success-text">[OK] Archive loaded</div><br>
+                    <div style="margin-bottom: 20px;">
+                        <div class="warning-text">SEARCH:</div>
+                        <input type="text" id="story-search" placeholder="Search stories..." 
+                               style="background: #001100; border: 1px solid #00ff00; color: #00ff00; padding: 5px; width: 300px; font-family: 'Courier New', monospace;" 
+                               oninput="filterStories()">
+                    </div>
+                    <div id="story-list" style="max-height: 400px; overflow-y: auto;"></div>
+                    <br><div class="prompt">STORY_ARCHIVE > <span class="cursor"></span></div>
+                </div>
+            </div>
+            
+            <div class="window" id="characters-window">
+                <div class="window-header">
+                    <span class="window-title">SURVIVOR_REGISTRY.exe</span>
+                    <div class="window-controls">
+                        <div class="window-control minimize"></div>
+                        <div class="window-control maximize"></div>
+                        <div class="window-control close" onclick="closeWindow('characters-window')"></div>
+                    </div>
+                </div>
+                <div class="window-content">
+                    <div class="prompt">SURVIVOR_DATABASE > Scanning biometric records...</div>
+                    <div class="success-text">[OK] Character profiles loaded</div><br>
+                    <input type="text" class="search-box" placeholder="Search survivors by name or user..." onkeyup="searchCharacters(this.value)">
+                    <div class="character-grid" id="character-list"></div>
+                    <br><div class="prompt">SURVIVOR_DATABASE > <span class="cursor"></span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="taskbar">
+            <div class="taskbar-item active" onclick="openWindow('main-window')">TERMINAL</div>
+            <div class="taskbar-item" onclick="openWindow('timeline-window')">TIMELINE</div>
+            <div class="taskbar-item" onclick="openWindow('dynamics-window')">DYNAMICS</div>
+            <div class="taskbar-item" onclick="openWindow('storyposts-window')">STORYPOSTS</div>
+            <div class="taskbar-item" onclick="openWindow('characters-window')">SURVIVORS</div>
+            <div class="system-info">
+                <span id="system-time"></span> | ECHONET OS v2.1 | SURVIVORS ONLINE: <span id="online-count">12</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="character-sheet-modal" id="character-modal">
+        <div class="character-sheet">
+            <div class="character-sheet-header">
+                <span class="window-title" id="sheet-title">CHARACTER PROFILE</span>
+                <div class="sheet-close" onclick="closeCharacterSheet()">×</div>
+            </div>
+            <div class="character-sheet-content" id="sheet-content"></div>
+        </div>
+    </div>
+
+    <script src="src/auth.js"></script>
+    <script src="src/data/timelineData.js"></script>
+    <script src="src/timeline.js"></script>
+    <script src="src/data/dynamicsData.js"></script>
+    <script src="src/dynamics.js"></script>
+    <script src="src/data/storiesData.js"></script>
+    <script src="src/data/characterData.js"></script>
+    <script src="src/data/characterList.js"></script>
+    <script src="src/main.js"></script>
+    <script src="src/stories.js"></script>
+    <script src="src/characters.js"></script>
+</body>
+</html>
