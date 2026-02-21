@@ -1,13 +1,54 @@
+// Simple hash-based router
+const router = {
+    routes: {
+        '': 'main-window',
+        'timeline': 'timeline-window',
+        'dynamics': 'dynamics-window',
+        'stories': 'storyposts-window',
+        'characters': 'characters-window'
+    },
+    
+    init() {
+        window.addEventListener('hashchange', () => this.handleRoute());
+        this.handleRoute();
+    },
+    
+    handleRoute() {
+        const hash = window.location.hash.slice(1);
+        const windowId = this.routes[hash] || this.routes[''];
+        openWindow(windowId);
+    }
+};
+
 let activeWindow = 'main-window';
 
 function openWindow(windowId) {
     document.querySelectorAll('.window').forEach(w => {
         w.classList.remove('active');
     });
+    document.querySelectorAll('.taskbar-item').forEach(t => {
+        t.classList.remove('active');
+    });
     
     document.getElementById(windowId).classList.add('active');
-    
     activeWindow = windowId;
+    
+    const taskbarMap = {
+        'main-window': 0,
+        'timeline-window': 1,
+        'dynamics-window': 2,
+        'storyposts-window': 3,
+        'characters-window': 4
+    };
+    const index = taskbarMap[windowId];
+    if (index !== undefined) {
+        document.querySelectorAll('.taskbar-item')[index].classList.add('active');
+    }
+    
+    const route = Object.keys(router.routes).find(key => router.routes[key] === windowId);
+    if (route !== undefined && window.location.hash.slice(1) !== route) {
+        window.location.hash = route;
+    }
 }
 
 function closeWindow(windowId) {
@@ -43,6 +84,7 @@ function updateOnlineCount() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    router.init();
     updateTime();
     updateOnlineCount();
     renderTimeline();

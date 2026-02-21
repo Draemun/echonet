@@ -14,10 +14,10 @@
             <div class="success-text">[SYSTEM] Terminal connection established</div>
             <div class="warning-text">[SECURITY] Unauthorized access prohibited</div>
             <br>
-            <form class="login-form" onsubmit="return false;">
+            <form class="login-form" onsubmit="attemptLogin(); return false;">
                 <input type="text" class="login-input" id="username" value="NullProtocol_FFx0" readonly autocomplete="off">
                 <input type="password" class="login-input" id="password" placeholder="Password" autocomplete="off">
-                <button type="button" class="login-button" onclick="attemptLogin()">ACCESS TERMINAL</button>
+                <button type="submit" class="login-button">ACCESS TERMINAL</button>
                 <div class="login-error" id="login-error">[ERROR] Invalid credentials. Access denied.</div>
             </form>
             <div class="info-text">Eternity is the key</div>
