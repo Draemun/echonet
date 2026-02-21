@@ -1,6 +1,7 @@
 const router = {
     routes: {
         '': 'main-window',
+        'home': 'main-window',
         'timeline': 'timeline-window',
         'dynamics': 'dynamics-window',
         'stories': 'storyposts-window',

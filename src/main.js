@@ -1,4 +1,4 @@
-// Simple hash-based router
+
 const router = {
     routes: {
         'home': 'main-window',
