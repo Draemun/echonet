@@ -1,4 +1,3 @@
-// Simple hash-based router
 const router = {
     routes: {
         '': 'main-window',
@@ -24,7 +23,6 @@ const router = {
     }
 };
 
-// Update openWindow to sync with URL
 const originalOpenWindow = window.openWindow;
 window.openWindow = function(windowId) {
     originalOpenWindow(windowId);
