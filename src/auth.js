@@ -7,6 +7,7 @@ function attemptLogin() {
     if (password === 'Eternity') {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-interface').style.display = 'block';
+        window.location.hash = 'home';
     } else {
         errorDiv.style.display = 'block';
         document.getElementById('password').value = '';

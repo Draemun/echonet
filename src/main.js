@@ -10,13 +10,15 @@ const router = {
     
     init() {
         window.addEventListener('hashchange', () => this.handleRoute());
-        this.handleRoute();
+        if (document.getElementById('main-interface').style.display !== 'none') {
+            this.handleRoute();
+        }
     },
     
     handleRoute() {
-        const hash = window.location.hash.slice(1);
-        const windowId = this.routes[hash] || this.routes[''];
-        openWindow(windowId);
+        const hash = window.location.hash.slice(1) || 'home';
+        const windowId = this.routes[hash];
+        if (windowId) openWindow(windowId);
     }
 };
 
